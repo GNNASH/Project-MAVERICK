@@ -1,0 +1,59 @@
+#include <QCoreApplication>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QDebug>
+
+int main(int argc, char *argv[]) {
+    QCoreApplication a(argc, argv);
+
+    // 1. Database Connection (SQLite example)
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName("mydatabase.sqlite"); // Replace with your database file
+
+    if (!db.open()) {
+        qDebug() << "Error: Cannot connect to database:" << db.lastError().text();
+        return 1;
+    }
+
+    qDebug() << "Database connected!";
+
+    // 2. Create a Table (if it doesn't exist)
+    QSqlQuery query(db);
+    if (!query.exec("CREATE TABLE IF NOT EXISTS mytable (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, value INTEGER)")) {
+        qDebug() << "Error creating table:" << query.lastError().text();
+        db.close();
+        return 1;
+    }
+
+    qDebug() << "Table created or already exists.";
+
+    // 3. Insert Data
+    query.prepare("INSERT INTO mytable (name, value) VALUES (:name, :value)");
+    query.bindValue(":name", "Example Data");
+    query.bindValue(":value", 42);
+
+    if (!query.exec()) {
+        qDebug() << "Error inserting data:" << query.lastError().text();
+        db.close();
+        return 1;
+    }
+
+    qDebug() << "Data inserted.";
+
+    // 4. Query Data
+    query.exec("SELECT * FROM mytable");
+    while (query.next()) {
+        int id = query.value(0).toInt();
+        QString name = query.value(1).toString();
+        int value = query.value(2).toInt();
+
+        qDebug() << "ID:" << id << ", Name:" << name << ", Value:" << value;
+    }
+
+    // 5. Close the Database Connection
+    db.close();
+    qDebug() << "Database connection closed.";
+
+    return 0;
+}
